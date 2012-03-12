@@ -1,0 +1,65 @@
+#содержимое /etc/network/interfaces :
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+address 10.0.131.246
+netmask 255.255.255.192
+gateway 10.0.131.193
+
+up route add -net 10.0.0.0 netmask 255.0.0.0 gw 10.0.131.193 
+up route add -host 195.98.64.65 gw 10.0.131.193 
+up route add -host 195.98.64.66 gw 10.0.131.193 
+#up route add -net 192.168.149.0/24 10.0.131.193
+
+#содержимое /etc/resolv.conf :
+nameserver 195.98.64.65
+nameserver 195.98.64.66
+
+#содержимое /etc/ppp/options.pptp : 
+lock 
+noauth 
+nobsdcomp 
+nodeflate
+
+#содержимое /etc/ppp/chap-secrets :
+# Secrets for authentication using CHAP
+# client	server	secret			IP addresses
+pwkav72b PPTP СВОЙ_ПАРОЛЬ *
+
+#содержимое /etc/ppp/peers/vpn :
+name pwkav72b
+remotename PPTP
+debug
+lock
+require-chap
+noauth
+nobsdcomp
+nodeflate
+nodetach
+noproxyarp
+pty " /usr/sbin/pptp pptp.freedom --nolaunchpppd"
+
+#содержимое /etc/ppp/ip-up :
+#!/bin/sh
+route del default
+route add default dev ppp0
+
+#содержимое /etc/ppp/ip-down :
+#!/bin/sh
+route add default gw 10.0.131.193
+
+#если файлов ip-up ip-down не было - создаем их и делаем исполняемыми :
+chmod +x /etc/ppp/ip-up 
+chmod +x /etc/ppp/ip-down
+
+#Подключение к интернету производиться командой:
+sudo pon vpn
+
+#Отключения от интернета производиться командой:
+sudo poff vpn
+
+#автоматическое подключение при загрузке компьютера.
+#прописать в /etc/rc.local строку (где угодно, но до команды exit): 
+sudo pon vpn
